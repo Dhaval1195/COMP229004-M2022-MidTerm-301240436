@@ -14,7 +14,7 @@ let carModel = mongoose.Schema(
         price: Number        
     },
     {
-        collection: "cars"
+        collection: "Cars"
     }
 );
 

@@ -46,13 +46,24 @@ module.exports.details = (req, res, next) => {
 // Renders the Add form using the add_edit.ejs template
 module.exports.displayAddPage = (req, res, next) => {
     
-    // ADD YOUR CODE HERE   
-    let newCar = Car();
+    // // ADD YOUR CODE HERE   
+  
 
     res.render('cars/add_edit', {
         title: 'Add a new Car',
-        car: newCar
-    })       
+        action:'car/add',
+        car:
+    {
+        make: '',
+        model: '',
+        year: '',
+        kilometers:'' ,
+        doors: '',
+        seats:'',
+        color: '',
+        price: '',
+    }
+    });       
 
 }
 
@@ -62,8 +73,8 @@ module.exports.processAddPage = (req, res, next) => {
     // ADD YOUR CODE HERE
 
 
-    let newCar = Car({
-        _id: req.body.id,
+    let newCar = CarModel({
+       // _id: req.body.id,
         make: req.body.make,
         model: req.body.model,
         year: req.body.year,
@@ -74,23 +85,16 @@ module.exports.processAddPage = (req, res, next) => {
         price: req.body.price
     });
 
-
-     
-
-
-    Car.create(newCar, (err, car) =>{
-        if(err)
-        {
-            console.log(err);
-            res.end(err);
-        }
-        else
-        {
-            // refresh the car list
-            console.log(car);
-            res.redirect('/cars/list');
-        }
+     // Save the new model instance, passing a callback
+     newCar.save(function(err) {
+        console.log(err)
+        if (err) return handleError(err);
+        // saved!
     });
+
+    res.redirect('/cars/list');
+
+    
 
 }
 
@@ -100,7 +104,7 @@ module.exports.displayEditPage = (req, res, next) => {
     // ADD YOUR CODE HERE
     let id = req.params.id;
 
-    Car.findById(id, (err, itemToEdit) => {
+    CarModel.findById(id, (err, existingCar) => {
         if(err)
         {
             console.log(err)
@@ -108,10 +112,19 @@ module.exports.displayEditPage = (req, res, next) => {
         }
         else
         {
-            //show the edit view
             res.render('cars/add_edit', {
-                title: 'Edit Car',
-                item: itemToEdit
+                title: 'Edit this Car',
+                action: `/cars/edit/${id}`,
+                car: {
+                    make: existingCar.make,
+                    model: existingCar.model,
+                    year: existingCar.year,
+                    kilometers: existingCar.kilometers,
+                    doors: existingCar.doors,
+                    seats: existingCar.seats,
+                    color: existingCar.color,
+                    price: existingCar.price,
+                }
             })
         }
     });
@@ -125,36 +138,49 @@ module.exports.processEditPage = (req, res, next) => {
     
     // ADD YOUR CODE HERE
 
-
-    let id = req.params.id
-    
-    //Update Car Database Schema
-    let updatedItem = Car({
-        _id: req.body.id,
-        make: req.body.make,
-        model: req.body.model,
-        year: req.body.year,
-        kilometers: req.body.kilometers,
-        doors: req.body.doors,
-        seats: req.body.seats,
-        color: req.body.color,
-        price: req.body.price
-		
-    });
-
-    Car.updateOne({_id: id}, updatedItem, (err) => {
-        if(err)
-        {
+    CarModel.findById(req.params.id, (err, existingCar) => {
+        if (err) {
             console.log(err);
             res.end(err);
-        }
-        else
-        {
-            //refresh the car list
-            res.redirect('/cars/list');
+        } else {
+
+            existingCar.updateOne({
+                make: req.body.make,
+                model: req.body.model,
+                year: req.body.year,
+                kilometers: req.body.kilometers,
+                doors: req.body.doors,
+                seats: req.body.seats,
+                color: req.body.color,
+                price: req.body.price,
+            });
+
+            existingCar.save()
+
         }
     });
-    
+
+    CarModel.findByIdAndUpdate(req.params.id, {
+            make: req.body.make,
+            model: req.body.model,
+            year: req.body.year,
+            kilometers: req.body.kilometers,
+            doors: req.body.doors,
+            seats: req.body.seats,
+            color: req.body.color,
+            price: req.body.price,
+        },
+        function(err) {
+            if (err) {
+                console.log(err)
+            }
+
+            console.log("Successful edit");
+        }
+    );
+
+    res.redirect('/cars/list');
+
 }
 
 // Deletes a car based on its id.
@@ -162,20 +188,15 @@ module.exports.performDelete = (req, res, next) => {
     
     // ADD YOUR CODE HERE
 
-    let id = req.params.id
+    
+    CarModel.deleteOne({ id: req.params.id }, function(err) {
+        if (err) {
+            console.log(err)
+        }
 
-    //Removing item by id
-    Car.remove({_id : id}, (err) => {
-        if (err)
-        {
-            console.log(err);
-            res.end(err);
-        }
-        else
-        {
-            //refresh the movie list
-            res.redirect('/cars/list');
-        }
+        console.log("Successful deletion");
     });
+
+    res.redirect(req.get('referer'));
 
 }
